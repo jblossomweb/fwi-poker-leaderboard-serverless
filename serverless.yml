@@ -45,7 +45,7 @@ functions:
          cors: true
 
   updatePlayer:
-    handler: controllers/updatePlayer
+    handler: controllers.updatePlayer
     events:
      - http:
          path: players/{id}
@@ -53,7 +53,7 @@ functions:
          cors: true
 
   deletePlayer:
-    handler: controllers/deletePlayer
+    handler: controllers.deletePlayer
     events:
      - http:
          path: players/{id}

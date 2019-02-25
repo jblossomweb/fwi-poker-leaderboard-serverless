@@ -4,3 +4,13 @@ jspm_packages
 
 # Serverless directories
 .serverless
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+.tmp
+
+# env
+.env

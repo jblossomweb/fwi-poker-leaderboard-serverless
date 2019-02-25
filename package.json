@@ -1,0 +1,21 @@
+{
+  "name": "fwi-poker-leaderboard-serverless",
+  "version": "1.0.0",
+  "description": "serverless node api",
+  "main": "controllers.js",
+  "scripts": {
+    "start": "serverless offline start --skipCacheInvalidation",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "serverless deploy -v"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "serverless": "^1.38.0",
+    "serverless-offline": "^4.6.0"
+  },
+  "dependencies": {
+    "dotenv": "^6.2.0",
+    "mongoose": "^5.4.15"
+  }
+}

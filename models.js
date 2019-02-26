@@ -1,9 +1,9 @@
 const mongoose = require('mongoose')
 
 const PlayerSchema = new mongoose.Schema({  
-  name: String,
-  country: String,
-  winnings: Number,
+  name: { type: String, required: [true, 'required']},
+  country: { type: String, required: [true, 'required']},
+  winnings: { type: Number, required: [true, 'required']},
 })
 
 module.exports = {

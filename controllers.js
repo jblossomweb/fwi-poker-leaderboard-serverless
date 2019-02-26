@@ -1,4 +1,5 @@
 const connectToDatabase = require('./db')
+const objectID = require('mongodb').ObjectID
 const models = require('./models')
 const Player = models.Player
 
@@ -15,17 +16,33 @@ module.exports.ping = async (event, context) => {
 module.exports.createPlayer = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false
 
+  try {
+    const newPlayer = JSON.parse(event.body)
+  } catch (err) {
+    return callback(null, {
+      statusCode: 400,
+      body: JSON.stringify({
+        name: err.name,
+        code: 400,
+        message: err.message,
+      })
+    })
+  }
+
   connectToDatabase()
     .then(() => {
-      Player.create(JSON.parse(event.body))
+      Player.create(newPlayer)
         .then(player => callback(null, {
           statusCode: 200,
           body: JSON.stringify(player)
         }))
         .catch(err => callback(null, {
           statusCode: err.statusCode || 500,
-          headers: { 'Content-Type': 'text/plain' },
-          body: 'Could not create the player.'
+          body: JSON.stringify({
+            name: err.name,
+            code: err.statusCode || 500,
+            message: err.message,
+          })
         }))
     })
 }
@@ -33,17 +50,44 @@ module.exports.createPlayer = (event, context, callback) => {
 module.exports.getPlayer = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false
 
+  const id = event.pathParameters.id
+  if (!objectID.isValid(id)) {
+    return callback(null, {
+      statusCode: 400,
+      body: JSON.stringify({
+        name: 'RequestError',
+        code: 400,
+        message: 'invalid value supplied for id',
+      })
+    })
+  }
+
   connectToDatabase()
     .then(() => {
-      Player.findById(event.pathParameters.id)
-        .then(player => callback(null, {
-          statusCode: 200,
-          body: JSON.stringify(player)
-        }))
+      Player.findById(id)
+        .then(player => {
+          if (!player) {
+            return callback(null, {
+              statusCode: 404,
+              body: JSON.stringify({
+                name: 'NotFound',
+                code: 404,
+                message: `player id ${id} was not found`,
+              })
+            })
+          }
+          return callback(null, {
+            statusCode: 200,
+            body: JSON.stringify(player)
+          })
+        })
         .catch(err => callback(null, {
           statusCode: err.statusCode || 500,
-          headers: { 'Content-Type': 'text/plain' },
-          body: 'Could not fetch the player.'
+          body: JSON.stringify({
+            name: err.name,
+            code: err.statusCode || 500,
+            message: err.message,
+          })
         }))
     })
 }
@@ -60,8 +104,11 @@ module.exports.getPlayers = (event, context, callback) => {
         }))
         .catch(err => callback(null, {
           statusCode: err.statusCode || 500,
-          headers: { 'Content-Type': 'text/plain' },
-          body: 'Could not fetch the players.'
+          body: JSON.stringify({
+            name: err.name,
+            code: err.statusCode || 500,
+            message: err.message,
+          })
         }))
     })
 }
@@ -69,36 +116,78 @@ module.exports.getPlayers = (event, context, callback) => {
 module.exports.updatePlayer = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false
 
+  const id = event.pathParameters.id
+  if (!objectID.isValid(id)) {
+    return callback(null, {
+      statusCode: 400,
+      body: JSON.stringify({
+        name: 'RequestError',
+        code: 400,
+        message: 'invalid value supplied for id',
+      })
+    })
+  }
+
+  try {
+    const update = JSON.parse(event.body)
+  } catch (err) {
+    return callback(null, {
+      statusCode: 400,
+      body: JSON.stringify({
+        name: err.name,
+        code: 400,
+        message: err.message,
+      })
+    })
+  }
+
   connectToDatabase()
     .then(() => {
-      Player.findByIdAndUpdate(event.pathParameters.id, JSON.parse(event.body), { new: true })
+      Player.findByIdAndUpdate(id, update, { new: true })
         .then(player => callback(null, {
           statusCode: 200,
           body: JSON.stringify(player)
         }))
         .catch(err => callback(null, {
           statusCode: err.statusCode || 500,
-          headers: { 'Content-Type': 'text/plain' },
-          body: 'Could not fetch the players.'
+          body: JSON.stringify({
+            name: err.name,
+            code: err.statusCode || 500,
+            message: err.message,
+          })
         }))
     })
 }
 
 module.exports.deletePlayer = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false
-  console.log('deleting player...')
+
+  const id = event.pathParameters.id
+  if (!objectID.isValid(id)) {
+    return callback(null, {
+      statusCode: 400,
+      body: JSON.stringify({
+        name: 'RequestError',
+        code: 400,
+        message: 'invalid value supplied for id',
+      })
+    })
+  }
 
   connectToDatabase()
     .then(() => {
-      Player.findByIdAndRemove(event.pathParameters.id)
+      Player.findByIdAndRemove(id)
         .then(player => callback(null, {
           statusCode: 200,
           body: JSON.stringify({ message: 'Removed player with id: ' + player._id, player: player })
         }))
         .catch(err => callback(null, {
           statusCode: err.statusCode || 500,
-          headers: { 'Content-Type': 'text/plain' },
-          body: 'Could not fetch the players.'
+          body: JSON.stringify({
+            name: err.name,
+            code: err.statusCode || 500,
+            message: err.message,
+          })
         }))
     })
 }

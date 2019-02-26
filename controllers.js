@@ -1,5 +1,6 @@
-const connectToDatabase = require('./db')
 const objectID = require('mongodb').ObjectID
+const { applyMiddleware } = require('./middleware')
+const connectToDatabase = require('./db')
 const models = require('./models')
 const Player = models.Player
 
@@ -13,11 +14,11 @@ module.exports.ping = async (event, context) => {
   }
 }
 
-module.exports.createPlayer = (event, context, callback) => {
+module.exports.createPlayer = applyMiddleware((event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false
-
+  let postedPlayer
   try {
-    const newPlayer = JSON.parse(event.body)
+    postedPlayer = JSON.parse(event.body)
   } catch (err) {
     return callback(null, {
       statusCode: 400,
@@ -31,23 +32,29 @@ module.exports.createPlayer = (event, context, callback) => {
 
   connectToDatabase()
     .then(() => {
-      Player.create(newPlayer)
+      Player.create(postedPlayer)
         .then(player => callback(null, {
           statusCode: 200,
           body: JSON.stringify(player)
         }))
-        .catch(err => callback(null, {
-          statusCode: err.statusCode || 500,
-          body: JSON.stringify({
-            name: err.name,
-            code: err.statusCode || 500,
-            message: err.message,
+        .catch(err => {
+          let code = err.statusCode || 500
+          if (err.name === 'ValidationError') {
+            code = 400
+          }
+          return callback(null, {
+            statusCode: code,
+            body: JSON.stringify({
+              name: err.name,
+              code,
+              message: err.message,
+            })
           })
-        }))
+        })
     })
-}
+})
 
-module.exports.getPlayer = (event, context, callback) => {
+module.exports.getPlayer = applyMiddleware((event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false
 
   const id = event.pathParameters.id
@@ -90,9 +97,9 @@ module.exports.getPlayer = (event, context, callback) => {
           })
         }))
     })
-}
+})
 
-module.exports.getPlayers = (event, context, callback) => {
+module.exports.getPlayers = applyMiddleware((event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false
 
   connectToDatabase()
@@ -111,9 +118,9 @@ module.exports.getPlayers = (event, context, callback) => {
           })
         }))
     })
-}
+})
 
-module.exports.updatePlayer = (event, context, callback) => {
+module.exports.updatePlayer = applyMiddleware((event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false
 
   const id = event.pathParameters.id
@@ -128,8 +135,9 @@ module.exports.updatePlayer = (event, context, callback) => {
     })
   }
 
+  let update
   try {
-    const update = JSON.parse(event.body)
+    update = JSON.parse(event.body)
   } catch (err) {
     return callback(null, {
       statusCode: 400,
@@ -148,18 +156,24 @@ module.exports.updatePlayer = (event, context, callback) => {
           statusCode: 200,
           body: JSON.stringify(player)
         }))
-        .catch(err => callback(null, {
-          statusCode: err.statusCode || 500,
-          body: JSON.stringify({
-            name: err.name,
-            code: err.statusCode || 500,
-            message: err.message,
+        .catch(err => {
+          let code = err.statusCode || 500
+          if (err.name === 'ValidationError') {
+            code = 400
+          }
+          return callback(null, {
+            statusCode: code,
+            body: JSON.stringify({
+              name: err.name,
+              code,
+              message: err.message,
+            })
           })
-        }))
+        })
     })
-}
+})
 
-module.exports.deletePlayer = (event, context, callback) => {
+module.exports.deletePlayer = applyMiddleware((event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false
 
   const id = event.pathParameters.id
@@ -190,4 +204,4 @@ module.exports.deletePlayer = (event, context, callback) => {
           })
         }))
     })
-}
+})
